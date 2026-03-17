@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Tischlerei Holzmann</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8B5A2B",
+                        "primary-dark": "#5D3A1A",
+                        "background-light": "#FAF9F6",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background-light text-slate-900 antialiased min-h-screen">
+
+    <!-- Header -->
+    <header class="flex items-center bg-white/95 backdrop-blur-md sticky top-0 z-50 px-4 py-3 justify-between border-b border-stone-200 lg:px-8 shadow-sm">
+        <a href="index.html" class="flex items-center gap-2">
+            <div class="text-primary flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-lg">
+                <span class="material-symbols-outlined text-2xl">carpenter</span>
+            </div>
+            <h2 class="text-[#2C2C2C] text-base font-extrabold leading-tight tracking-tight lg:text-xl">Tischlerei Holzmann</h2>
+        </a>
+        <a href="index.html" class="text-sm font-semibold text-stone-600 hover:text-primary transition-colors flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">arrow_back</span> Zurück zur Startseite
+        </a>
+    </header>
+
+    <!-- Blog Post Content -->
+    <main class="max-w-3xl mx-auto px-4 py-12 lg:px-6" id="blog-post">
+        <p class="text-stone-500 text-center py-16">Beitrag wird geladen...</p>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-900 text-stone-400 py-8 px-6 border-t border-stone-800 mt-auto">
+        <div class="max-w-7xl mx-auto text-center text-sm">
+            &copy; 2026 Tischlerei Holzmann &middot; <a href="index.html" class="hover:text-white transition-colors">Startseite</a>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        (async function () {
+            var SUPABASE_URL = 'https://apchqzlmhnwgnwpofemf.supabase.co';
+            var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwY2hxemxtaG53Z253cG9mZW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNjI5OTYsImV4cCI6MjA4NTkzODk5Nn0.cV2Y9D1cEzJ1tQgS_MfxPDaEqK65KNHep95-fi33cak';
+            var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            var CLIENT = 'tischler-wels';
+
+            var container = document.getElementById('blog-post');
+            var params = new URLSearchParams(window.location.search);
+            var postSlug = params.get('post');
+
+            if (!postSlug) {
+                container.innerHTML = '<p class="text-red-500 text-center py-16">Ungültiger Link.</p>';
+                return;
+            }
+
+            try {
+                var result = await sb
+                    .from('blog_posts')
+                    .select('title, content, published_at')
+                    .eq('client', CLIENT)
+                    .eq('slug', postSlug)
+                    .eq('status', 'published')
+                    .single();
+
+                if (result.error || !result.data) {
+                    container.innerHTML = '<p class="text-red-500 text-center py-16">Beitrag nicht gefunden.</p>';
+                    return;
+                }
+
+                var post = result.data;
+                var date = new Date(post.published_at).toLocaleDateString('de-AT', {
+                    day: '2-digit', month: 'long', year: 'numeric'
+                });
+
+                document.title = post.title + ' — Tischlerei Holzmann';
+
+                container.innerHTML =
+                    '<article>' +
+                        '<header class="mb-8 pb-6 border-b border-stone-200">' +
+                            '<h1 class="text-3xl lg:text-4xl font-extrabold text-stone-900 leading-tight mb-3">' + escapeHtml(post.title) + '</h1>' +
+                            '<p class="text-stone-500 text-sm">' + date + '</p>' +
+                        '</header>' +
+                        '<div class="prose-content">' + marked.parse(post.content) + '</div>' +
+                    '</article>' +
+                    '<div class="mt-12 pt-8 border-t border-stone-200">' +
+                        '<a href="index.html#blog" class="inline-flex items-center gap-2 text-primary font-semibold hover:gap-3 transition-all">' +
+                            '<span class="material-symbols-outlined text-sm">arrow_back</span> Alle Beiträge anzeigen' +
+                        '</a>' +
+                    '</div>';
+            } catch (err) {
+                console.error('Blog-Post laden fehlgeschlagen:', err);
+                container.innerHTML = '<p class="text-red-500 text-center py-16">Fehler beim Laden des Beitrags.</p>';
+            }
+
+            function escapeHtml(str) {
+                var div = document.createElement('div');
+                div.appendChild(document.createTextNode(str));
+                return div.innerHTML;
+            }
+        })();
+    </script>
+
+    <style>
+        /* Prose styles for rendered Markdown */
+        .prose-content { font-size: 1.05rem; line-height: 1.85; color: #374151; }
+        .prose-content h2 { font-size: 1.5rem; font-weight: 700; color: #1c1917; margin: 2rem 0 0.75rem; }
+        .prose-content h3 { font-size: 1.2rem; font-weight: 700; color: #1c1917; margin: 1.5rem 0 0.5rem; }
+        .prose-content p { margin-bottom: 1.25rem; }
+        .prose-content ul, .prose-content ol { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+        .prose-content li { margin-bottom: 0.4rem; }
+        .prose-content strong { color: #1c1917; }
+        .prose-content blockquote {
+            border-left: 3px solid #8B5A2B;
+            padding: 0.75rem 1.25rem;
+            margin: 1.5rem 0;
+            background: #faf5f0;
+            border-radius: 0 8px 8px 0;
+            color: #57534e;
+            font-style: italic;
+        }
+        .prose-content hr { border: none; border-top: 1px solid #e7e5e4; margin: 2rem 0; }
+        .prose-content a { color: #8B5A2B; text-decoration: underline; }
+    </style>
+</body>
+
+</html>

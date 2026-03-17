@@ -75,6 +75,8 @@
                     class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors">Projekte</a>
                 <a href="#testimonials"
                     class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors">Kundenstimmen</a>
+                <a href="#blog"
+                    class="text-sm font-semibold text-slate-600 hover:text-primary transition-colors">Blog</a>
             </nav>
 
             <div class="flex items-center gap-3">
@@ -421,6 +423,20 @@
                     </div>
                 </section>
 
+                <!-- BLOG SECTION -->
+                <section id="blog" class="py-20 px-4 bg-stone-50">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="mb-12 lg:text-center">
+                            <span class="text-primary font-bold tracking-wider uppercase text-sm mb-2 block">Aktuelles</span>
+                            <h2 class="text-3xl md:text-4xl font-bold text-stone-900 mb-4">Blog & Tipps</h2>
+                            <p class="text-stone-600 lg:max-w-2xl lg:mx-auto">Einblicke in unser Handwerk, Pflegetipps und Wissenswertes rund um Holz und Möbel.</p>
+                        </div>
+                        <div id="blog-posts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <p class="text-stone-400 col-span-full text-center py-8">Beiträge werden geladen...</p>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- FOOTER -->
                 <footer class="bg-stone-900 text-stone-400 py-12 px-6 border-t border-stone-800">
                     <div class="max-w-7xl mx-auto">
@@ -458,7 +474,61 @@
 
     <!-- Script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="form.js"></script>
+
+    <!-- Blog Loader -->
+    <script>
+        (async function () {
+            var SUPABASE_URL = 'https://apchqzlmhnwgnwpofemf.supabase.co';
+            var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwY2hxemxtaG53Z253cG9mZW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNjI5OTYsImV4cCI6MjA4NTkzODk5Nn0.cV2Y9D1cEzJ1tQgS_MfxPDaEqK65KNHep95-fi33cak';
+            var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            var CLIENT = 'tischler-wels';
+            var container = document.getElementById('blog-posts');
+            if (!container) return;
+
+            try {
+                var result = await sb
+                    .from('blog_posts')
+                    .select('title, slug, excerpt, content, published_at')
+                    .eq('client', CLIENT)
+                    .eq('status', 'published')
+                    .order('published_at', { ascending: false })
+                    .limit(6);
+
+                if (result.error) throw result.error;
+                if (!result.data || result.data.length === 0) {
+                    container.closest('section').style.display = 'none';
+                    return;
+                }
+
+                container.innerHTML = '';
+                result.data.forEach(function (post) {
+                    var excerpt = post.excerpt || post.content.replace(/[#*_`>\-\[\]()!]/g, '').replace(/\n+/g, ' ').trim().substring(0, 160) + '...';
+                    var date = new Date(post.published_at).toLocaleDateString('de-AT', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                    var card = document.createElement('a');
+                    card.href = 'blog-post.html?post=' + encodeURIComponent(post.slug);
+                    card.className = 'group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-stone-100 hover:border-primary/30';
+                    card.innerHTML =
+                        '<time class="text-xs text-stone-400 font-medium">' + date + '</time>' +
+                        '<h3 class="text-xl font-bold text-stone-900 mt-2 mb-3 group-hover:text-primary transition-colors">' + escapeHtml(post.title) + '</h3>' +
+                        '<p class="text-stone-600 text-sm mb-4 leading-relaxed">' + escapeHtml(excerpt) + '</p>' +
+                        '<span class="text-primary font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">Weiterlesen <span class="material-symbols-outlined text-sm">arrow_forward</span></span>';
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error('Blog laden fehlgeschlagen:', err);
+                container.innerHTML = '<p class="text-stone-400 col-span-full text-center">Blog konnte nicht geladen werden.</p>';
+            }
+
+            function escapeHtml(str) {
+                var div = document.createElement('div');
+                div.appendChild(document.createTextNode(str));
+                return div.innerHTML;
+            }
+        })();
+    </script>
 </body>
 
 </html>
